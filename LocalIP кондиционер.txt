@@ -1,0 +1,96 @@
+#include <ESP8266WiFi.h>
+
+const char* ssid = "FLATRON";
+const char* password = "1234567890123";
+const char* host = "192.168.1.145"; //it will tell you the IP once it starts up
+                                        //just write it here afterwards and upload
+
+int ledPin = 4; //D2
+WiFiServer server(301); //just pick any port number you like
+
+void setup() {
+  Serial.begin(115200);
+  delay(10);
+  Serial.println(WiFi.localIP());
+  pinMode(ledPin, OUTPUT);
+  digitalWrite(D3, LOW);
+  // Connect to WiFi network
+  Serial.println();
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("");
+  Serial.println("WiFi connected");
+
+  // Start the server
+  server.begin();
+  Serial.println("Server started");
+
+  // Print the IP address
+  Serial.println(WiFi.localIP());
+}
+
+void loop() {
+  // Check if a client has connected
+  
+  WiFiClient client = server.available();
+  if (!client) {
+    return;
+  }
+
+  // Wait until the client sends some data
+  while (!client.available()) {
+    delay(1);
+  }
+
+  // Read the first line of the request
+  String req = client.readStringUntil('\r');
+  client.flush();
+  // Prepare the response
+  String s1 = "HTTP/1.1 200 OK\r\n";
+  s1 += "Content-Type: text/html\r\n\r\n";
+  s1 += "<!DOCTYPE HTML>\r\n<html>\r\n";
+  s1 += "<head>\r\n<meta charset=\"UTF-8\">\r\n<title>I-equip</title>";
+  s1 += "<style>span{color: #1F618D; font-family: Arial; margin-right: 10px; margin-top: 15px; font-weight: bold; width: 20%; display: inline-block; text-align: left; font-size: 2.6rem;}";
+  s1 += "form{ margin: 0 auto; width: 1000px; text-align: center;} p{text-align: center; font-weight: bold;  font-family: Arial; width: 1000px; margin: 150px auto 20px auto; font-size: 8rem; color: #1F618D;}";
+  s1 += "#btn{ background-color: #4CAF50; padding: 20px; border-radius: 5px; color: white; margin-top: 35px; border: none; cursor: pointer; width: 25%; font-size: 2.6rem; text-align: center;} .first{ padding: 15px; border: 1px solid #ccc; font-size: 2.5rem;} div{ width: 100%;}</style></head>";
+  s1 += "<body><p>I-equip</p><form method=\"post\"><div><span>Login</span><input size = \"20\" type=\"login\" class=\"first\"><br><br>";
+  s1 += "<span>Password</span><input size = \"20\" type=\"password\" class=\"first\"><br></div><input id=\"btn\" type=\"button\" value=\"Sign in\" onclick=\"location.href='/signin'\"></form></body></html>";
+  
+  String s2 = "HTTP/1.1 200 OK\r\n";
+  s2 += "Content-Type: text/html\r\n\r\n";
+  s2 += "<!DOCTYPE HTML>\r\n<html>\r\n";
+  s2 += "<head>\r\n<meta charset=\"UTF-8\">\r\n<title>Arduino</title>";
+  s2 += "<style>body{margin: 0;} h2{color: #1F618D; font-family: Arial; font-size: 3.2rem;}p{color: #1F618D;display: inline;} p,span{font-size: 2.8rem; font-family: Calibri;} div{margin-left: 50px; margin-top: 60px;}";
+  s2 += "input{margin-left: 50px; margin-top: 35px; background-color: #4CAF50; padding: 20px; border-radius: 5px; color: white;border: none;cursor: pointer; width: 15%; font-size: 2.6rem;}</style></head>";
+  s2 += "<body><div><h2>User Information</h2><p>First Name:</p> <span>Bakytzhan</span><br><p>Second Name:</p> <span>Bektugan</span><br><p>User ID:</p> <span>135468</span><br></div>";
+  s2 += "<input type=\"button\" value=\"Exit\" onclick=\"location.href='/exit'\"></body></html>";
+  
+  // Match the request
+  if (req.indexOf("") != -10) {  //checks if you're on the main page
+
+    if (req.indexOf("/signin") != -1) { //checks if you clicked OFF
+      client.print(s2);
+      digitalWrite(ledPin, HIGH);
+    }
+    if (req.indexOf("/exit") != -1) { //checks if you clicked ON
+      client.print(s1);
+      digitalWrite(ledPin, LOW);
+    }
+  }
+
+  else {
+    Serial.println("invalid request");
+    client.stop();
+    return;
+  } 
+  client.flush();
+  delay(1);
+}
